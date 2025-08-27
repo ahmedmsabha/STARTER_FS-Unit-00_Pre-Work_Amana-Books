@@ -1,5 +1,42 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+### API Overview
+
+- `GET /api/books` — List books with optional search, filters, sorting and pagination.
+
+  - Query parameters:
+    - `q`: search string (matches `title` or `author`)
+    - `genre`: exact genre to include
+    - `inStock`: `true` or `false`
+    - `minRating`: number `0-5`
+    - `sortBy`: `title | author | datePublished | rating | reviewCount | price`
+    - `sortOrder`: `asc | desc`
+    - `page`: page number (>= 1)
+    - `limit`: items per page (1-100)
+  - Response shape:
+    ```json
+    {
+      "data": [
+        /* Book[] */
+      ],
+      "page": 1,
+      "limit": 10,
+      "total": 42,
+      "totalPages": 5,
+      "params": {
+        "q": "physics",
+        "genre": "Astronomy",
+        "inStock": true,
+        "minRating": 4,
+        "sortBy": "rating",
+        "sortOrder": "desc"
+      }
+    }
+    ```
+
+- `GET /api/books/[id]` — Fetch a single book by `id`.
+  - `404` if not found.
+
 ## Getting Started
 
 First, run the development server:
