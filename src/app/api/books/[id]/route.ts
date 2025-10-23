@@ -6,12 +6,12 @@ import Book from '@/models/Book';
 // GET /api/books/[id] - Return a single book by id
 export async function GET(
   _request: Request,
-  context: { params: { id: string } },
+  context: { params: { id: Promise<string> } },
 ) {
   try {
     await connectDB();
 
-    const { id } = context.params;
+    const { id } = await context.params;
     const book = await Book.findOne({ id }).lean();
 
     if (!book) {

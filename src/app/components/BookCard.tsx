@@ -18,6 +18,7 @@ const BookCard: React.FC<BookCardProps> = ({
   const [isAddingToCart, setIsAddingToCart] =
     useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [imageError, setImageError] = useState(false);
 
   // Function to render star ratings
   const renderStars = (rating: number) => {
@@ -110,14 +111,24 @@ const BookCard: React.FC<BookCardProps> = ({
         className="block cursor-pointer"
       >
         <div className="relative h-64 w-full bg-gray-100">
-          <Image
-            src={book.image}
-            alt={book.title}
-            fill
-            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
-            className="object-cover"
-            priority={book.featured}
-          />
+          {!imageError ? (
+            <Image
+              src={book.image}
+              alt={book.title}
+              fill
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
+              className="object-cover"
+              priority={book.featured}
+              onError={() => setImageError(true)}
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center bg-gray-200">
+              <div className="text-center">
+                <div className="text-4xl mb-2">📚</div>
+                <div className="text-sm text-gray-600">Book Cover</div>
+              </div>
+            </div>
+          )}
           <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
         </div>
       </Link>
@@ -184,15 +195,14 @@ const BookCard: React.FC<BookCardProps> = ({
           <button
             onClick={handleAddToCart}
             disabled={!book.inStock || isAddingToCart}
-            className={`flex-1 px-3 py-2 text-sm rounded-md transition-colors duration-200 ${
-              !book.inStock
+            className={`flex-1 px-3 py-2 text-sm rounded-md transition-colors duration-200 ${!book.inStock
                 ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                 : showSuccess
-                ? 'bg-green-600 text-white cursor-pointer'
-                : isAddingToCart
-                ? 'bg-blue-400 text-white cursor-wait'
-                : 'bg-blue-600 text-white hover:bg-blue-700 cursor-pointer'
-            }`}
+                  ? 'bg-green-600 text-white cursor-pointer'
+                  : isAddingToCart
+                    ? 'bg-blue-400 text-white cursor-wait'
+                    : 'bg-blue-600 text-white hover:bg-blue-700 cursor-pointer'
+              }`}
           >
             {showSuccess ? (
               <span className="flex items-center justify-center gap-1">

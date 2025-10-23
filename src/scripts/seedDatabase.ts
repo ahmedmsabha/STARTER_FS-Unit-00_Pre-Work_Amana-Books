@@ -10,10 +10,10 @@ dotenv.config({ path: '.env.local' });
 
 async function seedDatabase() {
     try {
-        const MONGODB_URI = process.env.MONGODB_URI;
+        const MONGODB_URI = process.env.DATABASE_MONGODB_URI || process.env.MONGODB_URI;
 
         if (!MONGODB_URI) {
-            throw new Error('MONGODB_URI is not defined in environment variables');
+            throw new Error('DATABASE_MONGODB_URI (or MONGODB_URI) is not defined in environment variables');
         }
 
         console.log('🔄 Connecting to MongoDB...');
