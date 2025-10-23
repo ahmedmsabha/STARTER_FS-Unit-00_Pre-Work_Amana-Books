@@ -6,12 +6,12 @@ import Book from '@/models/Book';
 // GET /api/books/[id] - Return a single book by id
 export async function GET(
   _request: Request,
-  context: { params: { id: Promise<string> } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     await connectDB();
 
-    const { id } = await context.params;
+    const { id } = await params;
     const book = await Book.findOne({ id }).lean();
 
     if (!book) {
@@ -34,12 +34,12 @@ export async function GET(
 // PUT /api/books/[id] - Update a book by id
 export async function PUT(
   request: Request,
-  context: { params: { id: Promise<string> } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     await connectDB();
 
-    const { id } = await context.params;
+    const { id } = await params;
     const body = await request.json();
 
     const book = await Book.findOneAndUpdate(
@@ -68,12 +68,12 @@ export async function PUT(
 // DELETE /api/books/[id] - Delete a book by id
 export async function DELETE(
   _request: Request,
-  context: { params: { id: Promise<string> } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     await connectDB();
 
-    const { id } = await context.params;
+    const { id } = await params;
     const book = await Book.findOneAndDelete({ id }).lean();
 
     if (!book) {
