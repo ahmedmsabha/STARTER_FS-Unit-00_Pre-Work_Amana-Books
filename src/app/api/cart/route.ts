@@ -1,39 +1,103 @@
 // src/app/api/cart/route.ts
 import { NextResponse } from 'next/server';
+import connectDB from '@/lib/mongoose';
+import Cart from '@/models/Cart';
 
 // GET /api/cart - Get cart items
-export async function GET() {
-  // In a real application, this would fetch cart items from a database
-  // based on user session or authentication token
-  return NextResponse.json({ message: 'Cart API endpoint - GET method' });
-}
-
-// POST /api/cart - Add item to cart
-export async function POST(request: Request) {
+// Query params:
+// - userId: string (defaults to 'guest' if not provided)
+export async function GET(request: Request) {
   try {
-    const body = await request.json();
-    // In a real application, this would add an item to the user's cart in the database
-    return NextResponse.json({ 
-      message: 'Item added to cart successfully',
-      item: body 
+    await connectDB();
+
+    const { searchParams } = new URL(request.url);
+    const userId = searchParams.get('userId') || 'guest';
+
+    const cart = await Cart.findOne({ userId }).lean();
+
+    return NextResponse.json({
+      success: true,
+      data: cart?.items || [],
     });
   } catch (err) {
-    console.error('Error adding item to cart:', err);
+    console.error('Error fetching cart:', err);
     return NextResponse.json(
-      { error: 'Failed to add item to cart' },
+      { error: 'Failed to fetch cart' },
       { status: 500 }
     );
   }
 }
 
-// PUT /api/cart - Update cart item
+// POST /api/cart - Add item to cart or update entire cart
+export async function POST(request: Request) {
+  try {
+    await connectDB();
+
+    const body = await request.json();
+    const userId = body.userId || 'guest';
+
+    // Upsert the cart (create if doesn't exist, update if exists)
+    const cart = await Cart.findOneAndUpdate(
+      { userId },
+      {
+        $set: {
+          items: body.items,
+        },
+      },
+      {
+        new: true,
+        upsert: true,
+        runValidators: true,
+      }
+    ).lean();
+
+    return NextResponse.json({
+      success: true,
+      data: cart,
+    });
+  } catch (err) {
+    console.error('Error updating cart:', err);
+    return NextResponse.json(
+      { error: 'Failed to update cart' },
+      { status: 500 }
+    );
+  }
+}
+
+// PUT /api/cart - Update cart item quantity
 export async function PUT(request: Request) {
   try {
+    await connectDB();
+
     const body = await request.json();
-    // In a real application, this would update an existing cart item
-    return NextResponse.json({ 
-      message: 'Cart item updated successfully',
-      item: body 
+    const userId = body.userId || 'guest';
+    const { bookId, quantity } = body;
+
+    if (!bookId || typeof quantity !== 'number') {
+      return NextResponse.json(
+        { error: 'bookId and quantity are required' },
+        { status: 400 }
+      );
+    }
+
+    const cart = await Cart.findOneAndUpdate(
+      { userId, 'items.bookId': bookId },
+      {
+        $set: { 'items.$.quantity': quantity },
+      },
+      { new: true }
+    ).lean();
+
+    if (!cart) {
+      return NextResponse.json(
+        { error: 'Cart or item not found' },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json({
+      success: true,
+      data: cart,
     });
   } catch (err) {
     console.error('Error updating cart item:', err);
@@ -44,17 +108,44 @@ export async function PUT(request: Request) {
   }
 }
 
-// DELETE /api/cart - Remove item from cart
+// DELETE /api/cart - Remove item from cart or clear entire cart
 export async function DELETE(request: Request) {
   try {
+    await connectDB();
+
     const { searchParams } = new URL(request.url);
+    const userId = searchParams.get('userId') || 'guest';
     const itemId = searchParams.get('itemId');
-    
-    // In a real application, this would remove an item from the user's cart
-    return NextResponse.json({ 
-      message: 'Item removed from cart successfully',
-      itemId 
-    });
+
+    if (itemId) {
+      // Remove specific item
+      const cart = await Cart.findOneAndUpdate(
+        { userId },
+        {
+          $pull: { items: { id: itemId } },
+        },
+        { new: true }
+      ).lean();
+
+      return NextResponse.json({
+        success: true,
+        data: cart,
+      });
+    } else {
+      // Clear entire cart
+      const cart = await Cart.findOneAndUpdate(
+        { userId },
+        {
+          $set: { items: [] },
+        },
+        { new: true }
+      ).lean();
+
+      return NextResponse.json({
+        success: true,
+        data: cart,
+      });
+    }
   } catch (err) {
     console.error('Error removing cart item:', err);
     return NextResponse.json(
@@ -63,44 +154,3 @@ export async function DELETE(request: Request) {
     );
   }
 }
-
-// Future implementation notes:
-// - Session management for user carts (using NextAuth.js or similar)
-// - Database integration patterns (Prisma, Drizzle, or raw SQL)
-// - Cart persistence strategies:
-//   * Guest carts: Store in localStorage/cookies with optional merge on login
-//   * User carts: Store in database with user ID association
-//   * Hybrid approach: localStorage for guests, database for authenticated users
-// - Security considerations:
-//   * Validate user ownership of cart items
-//   * Sanitize input data
-//   * Rate limiting to prevent abuse
-// - Performance optimizations:
-//   * Cache frequently accessed cart data
-//   * Batch operations for multiple item updates
-//   * Implement optimistic updates on the frontend
-
-// Example future database integration:
-// import { db } from '@/lib/database';
-// import { getServerSession } from 'next-auth';
-// 
-// export async function GET() {
-//   const session = await getServerSession();
-//   if (!session?.user?.id) {
-//     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-//   }
-//   
-//   try {
-//     const cartItems = await db.cartItem.findMany({
-//       where: { userId: session.user.id },
-//       include: { book: true }
-//     });
-//     
-//     return NextResponse.json(cartItems);
-//   } catch (error) {
-//     return NextResponse.json(
-//       { error: 'Failed to fetch cart items' },
-//       { status: 500 }
-//     );
-//   }
-// }
