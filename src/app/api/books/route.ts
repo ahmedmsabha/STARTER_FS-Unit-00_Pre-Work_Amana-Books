@@ -38,7 +38,7 @@ export async function GET(request: Request) {
     const limit = Math.min(100, Math.max(1, Number.isNaN(limitRaw) ? 10 : limitRaw));
 
     // Build query filter
-    const filter: any = {};
+    const filter: Record<string, unknown> = {};
 
     // Text search
     if (q) {
@@ -64,7 +64,7 @@ export async function GET(request: Request) {
     }
 
     // Build sort object
-    const sort: any = {};
+    const sort: Record<string, 1 | -1> = {};
     sort[sortBy] = sortOrder === 'asc' ? 1 : -1;
 
     // Calculate pagination
